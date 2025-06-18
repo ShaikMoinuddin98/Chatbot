@@ -19,7 +19,7 @@ const predefinedAnswers = {
   "what should we know about your life story in a few sentences":
     "I’m Shaik Moinuddin, a self-driven full-stack developer from India. I’m the Founding Development Lead at Imaginary Hub, building scalable EdTech products, solving 300+ LeetCode problems, and working on real-world AI and blockchain tech.",
 
-  "what's your number one superpower":
+  "what's your one superpower":
     "Relentless curiosity. I go deep into problems until I fully understand and solve them — whether it’s deploying infrastructure, cracking DSA, or debugging at 3 AM.",
 
   "what are the top 3 areas you'd like to grow in":
@@ -40,7 +40,7 @@ app.post('/voice', upload.single('audio'), async (req, res) => {
   const audioPath = req.file.path;
 
   try {
-    // 1. Send to Deepgram STT
+    // 1. STT from Deepgram
     const audio = fs.readFileSync(audioPath);
     const sttResponse = await axios.post('https://api.deepgram.com/v1/listen', audio, {
       headers: {
@@ -50,14 +50,10 @@ app.post('/voice', upload.single('audio'), async (req, res) => {
     });
 
     const transcript = sttResponse.data.results.channels[0].alternatives[0].transcript;
-    console.log('Transcript:', transcript);
-
-    // 2. Match against predefined answers
     const userQuestion = transcript.toLowerCase().trim();
     let reply = predefinedAnswers[userQuestion];
 
     if (!reply) {
-      // fallback to OpenRouter if needed
       const chatResponse = await axios.post(
         'https://openrouter.ai/api/v1/chat/completions',
         {
@@ -74,11 +70,10 @@ app.post('/voice', upload.single('audio'), async (req, res) => {
           }
         }
       );
-
       reply = chatResponse.data.choices[0].message.content;
     }
 
-    // 3. TTS via Deepgram
+    // 2. TTS using Deepgram
     const ttsResponse = await axios.post(
       'https://api.deepgram.com/v1/speak?model=aura-asteria-en',
       { text: reply },
@@ -91,9 +86,15 @@ app.post('/voice', upload.single('audio'), async (req, res) => {
       }
     );
 
-    fs.writeFileSync('public/response.mp3', ttsResponse.data);
+    // 3. Use unique file name
+    const fileName = `response-${Date.now()}.mp3`;
+    const filePath = path.join(__dirname, 'public', fileName);
+    fs.writeFileSync(filePath, ttsResponse.data);
 
-    res.json({ audio: '/response.mp3', text: reply });
+    res.json({ audio: `/${fileName}`, text: reply });
+
+    // Optional: delete the file after 1 minute to clean up
+    setTimeout(() => fs.existsSync(filePath) && fs.unlinkSync(filePath), 60_000);
   } catch (err) {
     console.error(err.response?.data || err.message);
     res.status(500).send('Something went wrong');

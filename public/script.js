@@ -30,7 +30,7 @@ recordBtn.onclick = async () => {
 
     const data = await res.json();
     transcriptText.textContent = `🤖 Bot says: ${data.text}`;
-    responseAudio.src = `${data.audio}?t=${Date.now()}`; 
+    responseAudio.src = data.audio; 
     responseAudio.play();
   };
 
