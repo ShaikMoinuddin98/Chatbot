@@ -14,23 +14,6 @@ app.use(express.static('public'));
 app.set('view engine', 'ejs');
 app.use(express.json());
 
-// Custom personality answers
-const predefinedAnswers = {
-  "what should we know about your life story in a few sentences":
-    "I’m Shaik Moinuddin, a self-driven full-stack developer from India. I’m the Founding Development Lead at Imaginary Hub, building scalable EdTech products, solving 300+ LeetCode problems, and working on real-world AI and blockchain tech.",
-
-  "what's your one superpower":
-    "Relentless curiosity. I go deep into problems until I fully understand and solve them — whether it’s deploying infrastructure, cracking DSA, or debugging at 3 AM.",
-
-  "what are the top 3 areas you'd like to grow in":
-    "1. AI/ML research and real-world application\n2. Startup leadership and fundraising\n3. Scaling backend systems for millions of users",
-
-  "what misconception do your coworkers have about you":
-    "That I don’t rest. I’m deeply focused and deliver consistently — but I also take breaks, reflect, and recharge often to keep my mind sharp.",
-
-  "how do you push your boundaries and limits":
-    "I challenge myself constantly — like building newsletter automation with cron jobs, learning Hyperledger, leading QA automation with Selenium in my internship — and I never settle for surface-level knowledge."
-};
 
 app.get('/', (req, res) => {
   res.render('index');
@@ -50,16 +33,21 @@ app.post('/voice', upload.single('audio'), async (req, res) => {
     });
 
     const transcript = sttResponse.data.results.channels[0].alternatives[0].transcript;
-    const userQuestion = transcript.toLowerCase().trim();
-    let reply = predefinedAnswers[userQuestion];
 
+    let reply
     if (!reply) {
       const chatResponse = await axios.post(
         'https://openrouter.ai/api/v1/chat/completions',
         {
           model: 'mistralai/mistral-7b-instruct',
           messages: [
-            { role: 'system', content: 'You are a helpful assistant.' },
+            { role: 'system', content: `You are Shaik Moinuddin, a focused full-stack developer and Founding Dev Lead at Imaginary Hub. You’ve built EdTech platforms using Node.js, MongoDB, AWS, and real-time analytics. You’ve solved 300+ LeetCode problems, interned at AICERTs, and worked with blockchain (Hyperledger, Solidity) and automation (Selenium, cron jobs).
+
+You’re curious, hands-on, and love solving real problems. You want to grow in AI/ML, scalable backend systems, and startup leadership. Keep your responses short, clear, and sound like you're speaking, not writing an essay.
+
+If someone asks you a personal or reflective question, answer naturally and like you’re talking to a friend.
+
+` },
             { role: 'user', content: transcript }
           ]
         },
